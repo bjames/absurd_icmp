@@ -2,6 +2,8 @@
 
 Absured ICMP is an example of playful computing. Ever wonder what you could do with only 4 bytes of user controlled traffic?
 
+![image](https://user-images.githubusercontent.com/1926082/232254369-d6cd5d7a-a6c5-4bcb-b375-ae0284c634df.png)
+
 ## C2
 The C2 functionality abuses the fact that [RFC3022](https://www.rfc-editor.org/rfc/rfc3022) specifies that the ID field is used when NAPT is applied to ICMP. Firewall manufacturers seem to have also applied this definition to how they statefully filter ICMP traffic. Under normal conditions, when an ICMP echo request is sent, the echo reply has the same ID and SEQ number as the request. However, only the ID number is considered when filtering ICMP replies. By establishing a set of well known SEQ numbers, we can use ICMP for C2. 
 
