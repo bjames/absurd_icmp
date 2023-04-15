@@ -11,20 +11,18 @@ control_codes = {
     "NEXT_CHUNK": 4,
     "START_VERIFY": 5,
     "STOP_VERIFY": 6,
-    "C2_CHECK_IN": 7,
 }
 
 # when running in C2 mode the controller may respond with a different seq number than the original ICMP packet it received. That control code tells the agent what to do next.
+# TODO we map in both directions so this should probably be an enum or something
 c2_actions = {
     "DO_NOTHING": 0,
     "KILL_PROCESS": 1,
     "LAUNCH_ATTACK": 2,
-    "SPAWN_SHELL": 3,
 }
 
 
 class absurdIcmp:
-
     control_identifier = control_identifier
     low_identifier = 1
     max_id = 65535  # max sequence number (2^16 - 1)

