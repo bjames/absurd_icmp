@@ -4,7 +4,7 @@ from scapy.all import *
 from time import sleep
 
 
-class icmpSend(icmp_common.icmpExfil):
+class icmpSend(icmp_common.absurdIcmp):
     def __init__(self, destination: str, filename: str):
 
         self.destination = destination

@@ -4,8 +4,10 @@ import time
 from uuid import uuid4
 from scapy.all import *
 
+connection_table = {}
 
-class icmpRecv(icmp_common.icmpExfil):
+
+class icmpRecv(icmp_common.absurdIcmp):
     def __init__(self, sender_ip: str, control_code: int):
 
         self.received_data = [[-1] * (self.max_id)]
@@ -109,3 +111,29 @@ class icmpRecv(icmp_common.icmpExfil):
                         pass
 
         print(f"File received and output to {self.path}{self.filename}")
+
+
+def process_incoming_packets(pkt):
+
+    sender_ip = pkt[IP].src
+    sequence = pkt[ICMP].seq
+    identifier = pkt[ICMP].id
+
+    # handle existing connections
+    if sender_ip in connection_table:
+        if identifier != icmp_common.control_identifier:
+            connection_table[sender_ip].receive_data(identifier, sequence)
+        else:
+            connection_table[sender_ip].handle_control_codes(sequence)
+
+    # handle new connections
+    elif identifier == icmp_common.control_identifier:
+        connection_table[sender_ip] = icmpRecv(sender_ip, sequence)
+        print(f"new transmission from {sender_ip}")
+    else:
+        print("unhandled ICMP packet received, ignoring")
+
+
+def start():
+
+    sniff(filter="icmp[icmptype] != icmp-echo", prn=process_incoming_packets)
