@@ -1,6 +1,6 @@
 # Absurd ICMP
 
-Absured ICMP is an example of playful computing. Ever wonder what you could do with only 4 bytes of user controlled traffic?
+Ever wonder what you could do with only 4 bytes of user controlled traffic? Absurd ICMP explores what might be accomplished in such a constrained environment.
 
 ![image](https://user-images.githubusercontent.com/1926082/232254369-d6cd5d7a-a6c5-4bcb-b375-ae0284c634df.png)
 
@@ -41,6 +41,8 @@ _This is just a POC and isn't really meant to be something I'd consider a fully 
 [] Unit tests  
 
 ## Usage
+
+Since absurd ICMP is crafting ICMP packets, it must be run as root. It's only been tested on linux and it's likely the C2 functionality will only work on linux as implemented.
 ```
 ┌─(bjames@lwks1)-[~/absurd_icmp] 
 └─$ ./venv/bin/python absurd_icmp.py -h
