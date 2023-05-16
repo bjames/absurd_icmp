@@ -10,7 +10,6 @@ from scapy.all import sniff, IP, ICMP
 
 
 def parseargs() -> argparse.Namespace:
-
     parser = argparse.ArgumentParser()
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -43,11 +42,10 @@ def parseargs() -> argparse.Namespace:
 
 
 def main(args: argparse.Namespace):
-
     if args.send:
         icmpSend(args.dip, args.file).start()
     elif args.receive:
-        icmp_receive.listen()
+        icmp_receive.start()
     elif args.controller:
         icmp_c2_controller.start()
     elif args.agent:

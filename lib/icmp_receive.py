@@ -9,7 +9,6 @@ connection_table = {}
 
 class icmpRecv(icmp_common.absurdIcmp):
     def __init__(self, sender_ip: str, control_code: int):
-
         self.received_data = [[-1] * (self.max_id)]
         self.filename_data = [[-1] * (self.max_id)]
         self.verification_data = [-1] * 16
@@ -28,7 +27,6 @@ class icmpRecv(icmp_common.absurdIcmp):
             )
 
     def receive_data(self, identifier, seq):
-
         if self.last_control_code == self.control_codes["STOP_FILENAME"]:
             self.received_data[self.chunk][identifier - 1] = seq
         elif self.last_control_code == self.control_codes["START_FILENAME"]:
@@ -78,10 +76,8 @@ class icmpRecv(icmp_common.absurdIcmp):
         for byte in self.verification_data:
             sender_digest += byte.to_bytes(2, "big")
 
-        print(digest)
-        print(sender_digest)
-
-        print(digest == sender_digest)
+        if digest == sender_digest:
+            print("File verification successful")
 
     def reassemble_filename(self):
         for i in range(len(self.filename_data)):
@@ -93,10 +89,7 @@ class icmpRecv(icmp_common.absurdIcmp):
                 except OverflowError:
                     continue
 
-        print(self.filename)
-
     def reassemble_and_output_data(self):
-
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
@@ -114,7 +107,6 @@ class icmpRecv(icmp_common.absurdIcmp):
 
 
 def process_incoming_packets(pkt):
-
     sender_ip = pkt[IP].src
     sequence = pkt[ICMP].seq
     identifier = pkt[ICMP].id
@@ -135,5 +127,5 @@ def process_incoming_packets(pkt):
 
 
 def start():
-
+    icmp_common.disable_kernel_icmp()
     sniff(filter="icmp[icmptype] != icmp-echo", prn=process_incoming_packets)

