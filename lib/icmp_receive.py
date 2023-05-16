@@ -34,6 +34,11 @@ class icmpRecv(icmp_common.absurdIcmp):
         elif self.last_control_code == self.control_codes["START_VERIFY"]:
             self.verification_data[identifier - 1] = seq
 
+        reply = ICMP(type="echo-reply", code=0, id=identifier, seq=seq)
+
+        # if dropped we'll just update on the next check in
+        send(IP(dst=self.sender_ip) / reply, verbose=False)
+
     def prep_next_chunk(self):
         if self.last_control_code == self.control_codes["START_FILENAME"]:
             self.filename_data.append([-1] * (self.max_id))
