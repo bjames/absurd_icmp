@@ -34,8 +34,6 @@ class icmpRecv(icmp_common.absurdIcmp):
         elif self.last_control_code == self.control_codes["START_VERIFY"]:
             self.verification_data[identifier - 1] = seq
 
-        self.respond(identifier, seq)
-
     def prep_next_chunk(self):
         if self.last_control_code == self.control_codes["START_FILENAME"]:
             self.filename_data.append([-1] * (self.max_id))
@@ -44,7 +42,7 @@ class icmpRecv(icmp_common.absurdIcmp):
         # TODO output the current chunk here and append PARTIAL to the filename
         self.chunk += 1
 
-    def handle_control_codes(self, identifier, seq):
+    def handle_control_codes(self, seq):
         """
         with the exception of START_TRANSMISSION all control codes are handled here
         """
@@ -70,8 +68,6 @@ class icmpRecv(icmp_common.absurdIcmp):
             self.last_control_code = self.control_codes["STOP_VERIFY"]
         else:
             raise ValueError(f"Invalid Control Code Received {seq}")
-
-        self.respond(identifier, seq)
 
     def verify_file(self):
         digest = self.hash_file(f"{self.path}{self.filename}")
@@ -109,12 +105,6 @@ class icmpRecv(icmp_common.absurdIcmp):
 
         print(f"File received and output to {self.path}{self.filename}")
 
-    def respond(self, identifier, seq):
-        reply = ICMP(type="echo-reply", code=0, id=identifier, seq=seq)
-
-        # if dropped we'll just update on the next check in
-        send(IP(dst=self.sender_ip) / reply, verbose=False)
-
 
 def process_incoming_packets(pkt):
     sender_ip = pkt[IP].src
@@ -126,7 +116,7 @@ def process_incoming_packets(pkt):
         if identifier != icmp_common.control_identifier:
             connection_table[sender_ip].receive_data(identifier, sequence)
         else:
-            connection_table[sender_ip].handle_control_codes(identifier, sequence)
+            connection_table[sender_ip].handle_control_codes(sequence)
 
     # handle new connections
     elif identifier == icmp_common.control_identifier:
@@ -134,6 +124,10 @@ def process_incoming_packets(pkt):
         print(f"new transmission from {sender_ip}")
     else:
         print("unhandled ICMP packet received, ignoring")
+
+    reply = ICMP(type="echo-reply", code=0, id=identifier, seq=sequence)
+    # if dropped we'll just update on the next check in
+    send(IP(dst=sender_ip) / reply, verbose=False)
 
 
 def start():
