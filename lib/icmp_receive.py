@@ -126,10 +126,9 @@ def process_incoming_packets(pkt):
         print("unhandled ICMP packet received, ignoring")
 
     reply = ICMP(type="echo-reply", code=0, id=identifier, seq=sequence)
-    # if dropped we'll just update on the next check in
     send(IP(dst=sender_ip) / reply, verbose=False)
 
 
 def start():
     icmp_common.disable_kernel_icmp()
-    sniff(filter="icmp[icmptype] != icmp-echo", prn=process_incoming_packets)
+    sniff(filter="icmp[icmptype] = icmp-echo", prn=process_incoming_packets)
