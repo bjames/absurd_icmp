@@ -34,10 +34,7 @@ class icmpRecv(icmp_common.absurdIcmp):
         elif self.last_control_code == self.control_codes["START_VERIFY"]:
             self.verification_data[identifier - 1] = seq
 
-        reply = ICMP(type="echo-reply", code=0, id=identifier, seq=seq)
-
-        # if dropped we'll just update on the next check in
-        send(IP(dst=self.sender_ip) / reply, verbose=False)
+        self.respond(identifier, seq)
 
     def prep_next_chunk(self):
         if self.last_control_code == self.control_codes["START_FILENAME"]:
@@ -47,7 +44,7 @@ class icmpRecv(icmp_common.absurdIcmp):
         # TODO output the current chunk here and append PARTIAL to the filename
         self.chunk += 1
 
-    def handle_control_codes(self, seq):
+    def handle_control_codes(self, identifier, seq):
         """
         with the exception of START_TRANSMISSION all control codes are handled here
         """
@@ -73,6 +70,8 @@ class icmpRecv(icmp_common.absurdIcmp):
             self.last_control_code = self.control_codes["STOP_VERIFY"]
         else:
             raise ValueError(f"Invalid Control Code Received {seq}")
+
+        self.respond(identifier, seq)
 
     def verify_file(self):
         digest = self.hash_file(f"{self.path}{self.filename}")
@@ -110,6 +109,12 @@ class icmpRecv(icmp_common.absurdIcmp):
 
         print(f"File received and output to {self.path}{self.filename}")
 
+    def respond(self, identifier, seq):
+        reply = ICMP(type="echo-reply", code=0, id=identifier, seq=seq)
+
+        # if dropped we'll just update on the next check in
+        send(IP(dst=self.sender_ip) / reply, verbose=False)
+
 
 def process_incoming_packets(pkt):
     sender_ip = pkt[IP].src
@@ -121,7 +126,7 @@ def process_incoming_packets(pkt):
         if identifier != icmp_common.control_identifier:
             connection_table[sender_ip].receive_data(identifier, sequence)
         else:
-            connection_table[sender_ip].handle_control_codes(sequence)
+            connection_table[sender_ip].handle_control_codes(identifier, sequence)
 
     # handle new connections
     elif identifier == icmp_common.control_identifier:
